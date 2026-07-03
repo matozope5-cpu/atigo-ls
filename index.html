@@ -514,10 +514,21 @@
         <span class="chat-fab-text">AT Support</span>
     </button>
 
-    <!-- ══ Tawk.to Script (loaded but widget hidden until user clicks) ══ -->
+    <!-- ══ Tawk.to Script (hidden until user clicks) ══ -->
     <script type="text/javascript">
-        var Tawk_API = Tawk_API || {},
-            Tawk_LoadStart = new Date();
+        // 1. Prevent auto‑popup and keep widget hidden
+        var Tawk_API = Tawk_API || {};
+        Tawk_API.autoPopUp = false;          // disable automatic greeting popup
+        Tawk_API.visibility = 'hidden';      // start hidden
+
+        // 2. On load, ensure it stays hidden and update greeting text
+        Tawk_API.onLoad = function() {
+            Tawk_API.hideWidget();
+            // Optionally change the greeting message (not the title)
+            // Tawk_API.setGreeting("Welcome to ATMoney Loans Support!");
+        };
+
+        // 3. Load the Tawk.to script
         (function() {
             var s1 = document.createElement("script"),
                 s0 = document.getElementsByTagName("script")[0];
@@ -541,7 +552,7 @@
             }
         });
 
-        // ── LOADING OVERLAY ON CTA ──
+        // ── LOADING OVERLAY ON CTA (redirects to apply.html) ──
         (function() {
             const applyBtn = document.getElementById('applyBtn');
             const overlay = document.getElementById('loadingOverlay');
@@ -550,16 +561,22 @@
                 overlay.style.display = 'flex';
                 setTimeout(() => {
                     overlay.style.display = 'none';
-                    window.location.href = 'apply.html'; // your existing details page
+                    window.location.href = 'apply.html';
                 }, 2000);
             }
 
             applyBtn.addEventListener('click', startApplication);
-
-            // Hide overlay on page load / back navigation
             window.addEventListener('load', () => { overlay.style.display = 'none'; });
             window.addEventListener('pageshow', () => { overlay.style.display = 'none'; });
         })();
+
+        /*
+            ── NOTE: The Tawk.to widget still displays "Telecel Loans" because that's
+            the widget name set in your Tawk.to dashboard. To change it to "ATMoney Loans":
+            1. Log in to your Tawk.to account.
+            2. Go to the widget settings and update the "Widget Name" and "Greeting Message".
+            3. The changes will apply automatically.
+        */
     </script>
 </body>
 </html>
